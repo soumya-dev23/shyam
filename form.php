@@ -1,6 +1,27 @@
 <?php
 session_start();
 if(isset($_POST['save'])){
+    
+
+    $target_dir = "upload/";
+    $target_file = $target_dir . basename($_FILES["fileToUpload"]["name"]);
+    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+    $allowedTypes = ['jpg', 'png'];
+
+    // check type
+    if (!in_array($imageFileType, $allowedTypes)) {
+        $msg = "Type is not allowed";
+    } // Check if file already exists
+    elseif (file_exists($target_file)) {
+        $msg = "Sorry, file already exists.";
+    } // Check file size
+    elseif ($_FILES["fileToUpload"]["size"] > 5000000) {
+        $msg = "Sorry, your file is too large.";
+    } elseif (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
+        $msg = "The file " . basename($_FILES["fileToUpload"]["name"]) . " has been uploaded.";
+    }
+
+
     //store the session data
     $id = $_POST['id'];
     $_SESSION['cart'][$id] = array();
@@ -10,12 +31,8 @@ if(isset($_POST['save'])){
     $product['username'] = $_POST['username'];
     $product['address'] = $_POST['address'];
     $product['gender'] = $_POST['gender'];
-
-
+    $product['image'] = basename($_FILES["fileToUpload"]["name"]);
     array_push($_SESSION['cart'][$id], $product); 
-
-
-    
 }
 //reset the form data
 if(isset($_POST['reset'])){
@@ -39,7 +56,7 @@ if(isset($_POST['reset'])){
 </head>
 <body>
    <div class="container">
-     <form class="form-horizontal" action="" method="post">
+     <form class="form-horizontal" action="" method="post" enctype="multipart/form-data">
      <div class="form-group">
             <label class="control-label col-sm-2" for="email">Id:</label>
             <div class="col-sm-10">
@@ -68,6 +85,12 @@ if(isset($_POST['reset'])){
             </div>
           </div>
           <div class="form-group">
+            <label class="control-label col-sm-2" for="email">Image:</label>
+            <div class="col-sm-10">
+            <input type="file" name="fileToUpload" id="fileToUpload">
+            </div>
+          </div>
+          <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
               <button type="submit" name="save" class="btn btn-success">Submit</button>
               <button type="submit" name="reset" class="btn btn-danger">Reset</button>
@@ -81,11 +104,12 @@ if(isset($_POST['reset'])){
 <table  class="display" style="width:100%" id="emp_table" border="1">
   <thead>
   <tr>
-     <th>SrNo </th>
      <th>Id </th>
      <th>Name </th>
+     <th>Image </th>
      <th>Address </th>
      <th>Gender </th>
+     <th>Action </th>
   </tr>
   </thead>
 <tbody>
@@ -94,11 +118,12 @@ $total = 0;
 if(isset($_SESSION['cart'])){
 foreach ($_SESSION['cart'] as $rows) :?>
   <tr class="item_row">
-        <td><?php echo ++$total; ?></td>
         <td> <?php echo $rows[0]['id']; ?></td>
+        <td> <?php echo $rows[0]['image']; ?></td>
         <td> <?php echo $rows[0]['username']; ?></td>
         <td> <?php echo $rows[0]['address']; ?></td>
         <td> <?php echo $rows[0]['gender']; ?></td>
+        <td> <a> edit </a></td>
   </tr>
 <?php endforeach;?>
 <?php } ?>
@@ -111,9 +136,17 @@ foreach ($_SESSION['cart'] as $rows) :?>
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
   
 <script>
-    $(document).ready(function () {
-        $('#emp_table').DataTable();
-    });
+  // sort data by Name and ID.
+    $(document).ready(function() {
+    var table = $('#emp_table').DataTable( {
+        rowReorder: true,
+        columnDefs: [
+            { orderable: true, className: 'reorder', targets: 0 },
+            { orderable: true, className: 'reorder', targets: 1 },
+            { orderable: false, targets: '_all' }
+        ]
+    } );
+} );
 </script>
 </body>
 </html>
